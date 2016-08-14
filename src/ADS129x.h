@@ -1,0 +1,3 @@
+/* Simple library */
+
+char* hello();
