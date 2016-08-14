@@ -8,5 +8,7 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-  Serial.println(hello());
+  // Initialize OpenHardwareExG board and get potential in volts from Channel 1
+  ADS129x.init();
+  Serial.println(ADS129x.getVolts(1));
 }
