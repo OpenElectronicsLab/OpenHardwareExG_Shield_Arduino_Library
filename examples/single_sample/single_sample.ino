@@ -10,5 +10,6 @@ void setup() {
   }
   // Initialize OpenHardwareExG board and get potential in volts from Channel 1
   ADS129x.init();
-  Serial.println(ADS129x.getVolts(1));
+  Serial.print(ADS129x.getVolts(1));
+  Serial.println(" volts");
 }
