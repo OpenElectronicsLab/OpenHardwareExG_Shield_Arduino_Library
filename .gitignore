@@ -1,0 +1,29 @@
+###################
+# backup files
+###################
+*.bak
+*.bck
+$*
+*.swp
+*.000
+*~
+*-bak
+
+################
+# Output files
+################
+*.o
+*.a
+*.bin
+*.d
+*.elf
+*.hex
+*.list
+*.srec
+*.map
+
+####################
+# R temporary files
+####################
+.RData
+.Rhistory
