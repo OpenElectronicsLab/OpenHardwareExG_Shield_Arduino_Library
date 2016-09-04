@@ -20,27 +20,21 @@ void ADS129xChip::init()
 	ipinSlaveCS = 6;
 	ipinMasterCS = 7;
 	setGPIOToOutput = false;
-	leadOffSensingEnabled = true;
+	leadOffSensingEnabled = false;
 	sharedNegativeElectrode = false;
 	liveChannelsNum = 8;
 
 	using namespace ADS1298;
 	int i;
 
-	// initialize the USB Serial connection
-	SERIAL_OBJ.begin(230400);
-
-	SERIAL_OBJ.print("Hello, world!\n");
-
-	// set the LED on
-	pinMode(13, OUTPUT);
-	digitalWrite(13, HIGH);
-
-	pinMode(IPIN_MASTER_CS, OUTPUT);
-	pinMode(IPIN_MASTER_DRDY, INPUT);
+	// set up inputs and outpus
+	pinMode(ipinMasterCS, OUTPUT);
+	pinMode(ipinDRDY, INPUT);
 
 	SPI.begin();
 
+	// setup SPI (note that if you have multiple SPI devices
+	// you may need different settings)
 	SPI.setBitOrder(MSBFIRST);
 	SPI.setClockDivider(SPI_CLOCK_DIVIDER_VAL);
 	SPI.setDataMode(SPI_MODE1);
@@ -49,11 +43,16 @@ void ADS129xChip::init()
 	//  for Power-On Reset and Oscillator Start-Up
 	delay(100);
 
-	adc_send_command(RESET);
+	// Reset the device and exit read data continuous mode.
+	// "If the device is in RDATAC mode, a SDATAC command must be issued
+	// before any other commands can be sent to the device."
+	// (page 36 of the ADS1299 data sheet)
+	sendCommand(SDATAC);
 	delay(1);
-
-	// Send SDATAC Command (Stop Read Data Continuously mode)
-	adc_send_command(SDATAC);
+	sendCommand(RESET);
+	delay(1);
+	sendCommand(SDATAC);
+	delay(1);
 
 	if (setGPIOToOutput) {
 		// All GPIO set to output 0x0000
