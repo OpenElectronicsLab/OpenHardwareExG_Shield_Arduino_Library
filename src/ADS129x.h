@@ -1,5 +1,7 @@
 /* Library for accessing the ADS129x chip */
 
+#include <stdint.h>
+
 class ADS129xChip{
   private:
 
@@ -19,7 +21,7 @@ class ADS129xChip{
 
   void sendCommand(int cmd);
 
-  byte readRegister(int reg);
+  uint8_t readRegister(int reg);
 
   void writeRegister(int reg, int val);
 
@@ -28,6 +30,8 @@ class ADS129xChip{
   void init();
 
   float getVolts(int channel);
+
+  unsigned long timeOfSample();
 };
 
 extern ADS129xChip ADS129x;

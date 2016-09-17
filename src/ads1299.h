@@ -15,7 +15,7 @@ namespace ADS1299 {
 		bit11 = 1<<11,
 		bit10 = 1<<10,
 		bit9 = 1<<9,
-		bit8 = 1<<8
+		bit8 = 1<<8,
 		bit7 = 1<<7,
 		bit6 = 1<<6,
 		bit5 = 1<<5,
@@ -166,6 +166,9 @@ namespace ADS1299 {
 		BIAS_STAT = bit0,
 
 		// TODO improve names; ~PD~ name consistency?
+		PD_REFBUF_reference_buffer_powered_down = 0,
+		PD_REFBUF_reference_buffer_enabled = PD_REFBUF,
+
 		PD_BIAS_bias_buffer_powered_down = 0,
 		PD_BIAS_bias_buffer_enabled = PD_BIAS,
 

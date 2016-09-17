@@ -1,5 +1,6 @@
 /* Single Sample takes a single sample from channel 1 of the OpenHardwareExG device. */
 
+#include <SPI.h>
 #include <ADS129x.h>
 
 void setup() {
