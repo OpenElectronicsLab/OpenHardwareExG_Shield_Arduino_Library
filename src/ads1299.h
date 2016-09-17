@@ -137,13 +137,14 @@ namespace ADS1299 {
                 CAL_FREQ0 = bit0,
 
 		CONFIG2_const = (CONFIG2_7_on | CONFIG2_6_on),
-		//CONFIG2_5_off, CONFIG2_3_off
+		// CONFIG2_5_off, CONFIG2_3_off
 
 		INT_CAL_external = 0x00,
 		INT_CAL_internal = INT_CAL,
 
-		CAL_AMP0_low = 0x00,
-		CAL_AMP0_high = CAL_AMP0, //TODO check values in datasheet against real volts
+		// TODO check values in datasheet against real volts
+		CAL_AMP0_low = 0x00, // 0.8mV ?
+		CAL_AMP0_high = CAL_AMP0, // 1.6mV ?
 
 		// (2_048_000 Hz)/(2^21) == 0.9765625 Hz
 		CAL_FREQ_one_Hz = 0x00,
@@ -153,31 +154,35 @@ namespace ADS1299 {
 		CAL_FREQ_DC = (CAL_FREQ1 | CAL_FREQ0)
 	};
 
-/*
 
 	enum CONFIG3_bits {
-		PD_REFBUF = 0x80,
-		VREF_4V = 0x20,
-		RLD_MEAS = 0x10,
-		RLDREF_INT = 0x08,
-		PD_RLD = 0x04,
-		RLD_LOFF_SENS = 0x02,
-		RLD_STAT = 0x01,
+		PD_REFBUF = bit7,
+		CONFIG3_6_on = bit6,
+		CONFIG3_5_on = bit5,
+		BIAS_MEAS = bit4,
+		BIASREF_INT = bit3,
+		PD_BIAS = bit2, // inverted value
+		BIAS_LOFF_SENS = bit1,
+		BIAS_STAT = bit0,
 
-		CONFIG3_const = 0x40
+		// TODO improve names; ~PD~ name consistency?
+		PD_BIAS_bias_buffer_powered_down = 0,
+		PD_BIAS_bias_buffer_enabled = PD_BIAS,
+
+		CONFIG3_const = (CONFIG3_6_on | CONFIG3_5_on),
 	};
 
 	enum LOFF_bits {
-		COMP_TH2 = 0x80,
-		COMP_TH1 = 0x40,
-		COMP_TH0 = 0x20,
-		VLEAD_OFF_EN = 0x10,
-		ILEAD_OFF1 = 0x08,
-		ILEAD_OFF0 = 0x04,
-		FLEAD_OFF1 = 0x02,
-		FLEAD_OFF0 = 0x01,
+		COMP_TH2 = bit7,
+		COMP_TH1 = bit6,
+		COMP_TH0 = bit5,
+		LOFF_4_off = bit4,
+		ILEAD_OFF1 = bit3,
+		ILEAD_OFF0 = bit2,
+		FLEAD_OFF1 = bit1,
+		FLEAD_OFF0 = bit0,
 
-		LOFF_const = 0x00,
+		LOFF_const = 0x00, // LOFF_4_off
 
 		COMP_TH_95 = 0x00,
 		COMP_TH_92_5 = COMP_TH0,
@@ -189,363 +194,194 @@ namespace ADS1299 {
 		COMP_TH_70 = (COMP_TH2 | COMP_TH1 | COMP_TH0),
 
 		ILEAD_OFF_6nA = 0x00,
-		ILEAD_OFF_12nA = ILEAD_OFF0,
-		ILEAD_OFF_18nA = ILEAD_OFF1,
-		ILEAD_OFF_24nA = (ILEAD_OFF1 | ILEAD_OFF0),
+		ILEAD_OFF_24nA = ILEAD_OFF0,
+		ILEAD_OFF_6uA = ILEAD_OFF1,
+		ILEAD_OFF_24uA = (ILEAD_OFF1 | ILEAD_OFF0),
 
-		FLEAD_OFF_AC = FLEAD_OFF0,
-		FLEAD_OFF_DC = (FLEAD_OFF1 | FLEAD_OFF0)
+		FLEAD_OFF_DC = 0x00,
+		FLEAD_OFF_AC_7_8Hz = FLEAD_OFF0, // (SYS_CLK / (2^18))
+		FLEAD_OFF_AC_31_2Hz = FLEAD_OFF1, // (SYS_CLK / (2^16))
+		FLEAD_OFF_AC_DR_DIV_4 = (FLEAD_OFF1 | FLEAD_OFF0) // (DR / 4)
 	};
 
+	// CHnSET represents CH1SET, CH2SET, CH3SET, etc.
 	enum CHnSET_bits {
-		PDn = 0x80,
-		PD_n = 0x80,
-		GAINn2 = 0x40,
-		GAINn1 = 0x20,
-		GAINn0 = 0x10,
-		SRB2 = 0x08,	// actually ADS1299 specific
-		MUXn2 = 0x04,
-		MUXn1 = 0x02,
-		MUXn0 = 0x01,
+		PDn = bit7, // e.g. PD1
+		PD_n = bit7,
+		GAINn2 = bit6,
+		GAINn1 = bit5,
+		GAINn0 = bit4, // e.g. GAIN10
+		SRB2 = bit3,	// actually ADS1299 specific
+		MUXn2 = bit2,
+		MUXn1 = bit1,
+		MUXn0 = bit0, // e.g. MUX10
 
 		CHnSET_const = 0x00,
 
-		GAIN_1X = GAINn0,
-		GAIN_2X = GAINn1,
-		GAIN_3X = (GAINn1 | GAINn0),
-		GAIN_4X = GAINn2,
-		GAIN_6X = 0x00,
-		GAIN_8X = (GAINn2 | GAINn0),
-		GAIN_12X = (GAINn2 | GAINn1),
+		GAIN_1X = 0x00,
+		GAIN_2X = GAINn0,
+		GAIN_4X = GAINn1,
+		GAIN_6X = (GAINn1 | GAINn0),
+		GAIN_8X = GAINn2,
+		GAIN_12X = (GAINn2 | GAINn0),
+		GAIN_24X = (GAINn2 | GAINn1),
 
 		ELECTRODE_INPUT = 0x00,
 		SHORTED = MUXn0,
-		RLD_INPUT = MUXn1,
+		BIAS_INPUT = MUXn1,
 		MVDD = (MUXn1 | MUXn0),
-		TEMP = MUXn2,
+		TEMPERATURE = MUXn2,
 		TEST_SIGNAL = (MUXn2 | MUXn0),
-		RLD_DRP = (MUXn2 | MUXn1),
-		RLD_DRN = (MUXn2 | MUXn1 | MUXn0)
+		BIAS_DRP = (MUXn2 | MUXn1),
+		BIAS_DRN = (MUXn2 | MUXn1 | MUXn0)
 	};
 
-	enum CH1SET_bits {
-		PD_1 = 0x80,
-		GAIN12 = 0x40,
-		GAIN11 = 0x20,
-		GAIN10 = 0x10,
-		MUX12 = 0x04,
-		MUX11 = 0x02,
-		MUX10 = 0x01,
+	enum BIAS_SENSP_bits {
+		BIASP8 = bit7,
+		BIASP7 = bit6,
+		BIASP6 = bit5,
+		BIASP5 = bit4,
+		BIASP4 = bit3,
+		BIASP3 = bit2,
+		BIASP2 = bit1,
+		BIASP1 = bit0,
 
-		CH1SET_const = 0x00
+		BIAS_SENSP_const = 0x00
 	};
 
-	enum CH2SET_bits {
-		PD_2 = 0x80,
-		GAIN22 = 0x40,
-		GAIN21 = 0x20,
-		GAIN20 = 0x10,
-		MUX22 = 0x04,
-		MUX21 = 0x02,
-		MUX20 = 0x01,
+	enum BIAS_SENSN_bits {
+		BIASN8 = bit7,
+		BIASN7 = bit6,
+		BIASN6 = bit5,
+		BIASN5 = bit4,
+		BIASN4 = bit3,
+		BIASN3 = bit2,
+		BIASN2 = bit1,
+		BIASN1 = bit0,
 
-		CH2SET_const = 0x00
-	};
-
-	enum CH3SET_bits {
-		PD_3 = 0x80,
-		GAIN32 = 0x40,
-		GAIN31 = 0x20,
-		GAIN30 = 0x10,
-		MUX32 = 0x04,
-		MUX31 = 0x02,
-		MUX30 = 0x01,
-
-		CH3SET_const = 0x00
-	};
-
-	enum CH4SET_bits {
-		PD_4 = 0x80,
-		GAIN42 = 0x40,
-		GAIN41 = 0x20,
-		GAIN40 = 0x10,
-		MUX42 = 0x04,
-		MUX41 = 0x02,
-		MUX40 = 0x01,
-
-		CH4SET_const = 0x00
-	};
-
-	enum CH5SET_bits {
-		PD_5 = 0x80,
-		GAIN52 = 0x40,
-		GAIN51 = 0x20,
-		GAIN50 = 0x10,
-		MUX52 = 0x04,
-		MUX51 = 0x02,
-		MUX50 = 0x01,
-
-		CH5SET_const = 0x00
-	};
-
-	enum CH6SET_bits {
-		PD_6 = 0x80,
-		GAIN62 = 0x40,
-		GAIN61 = 0x20,
-		GAIN60 = 0x10,
-		MUX62 = 0x04,
-		MUX61 = 0x02,
-		MUX60 = 0x01,
-
-		CH6SET_const = 0x00
-	};
-
-	enum CH7SET_bits {
-		PD_7 = 0x80,
-		GAIN72 = 0x40,
-		GAIN71 = 0x20,
-		GAIN70 = 0x10,
-		MUX72 = 0x04,
-		MUX71 = 0x02,
-		MUX70 = 0x01,
-
-		CH7SET_const = 0x00
-	};
-
-	enum CH8SET_bits {
-		PD_8 = 0x80,
-		GAIN82 = 0x40,
-		GAIN81 = 0x20,
-		GAIN80 = 0x10,
-		MUX82 = 0x04,
-		MUX81 = 0x02,
-		MUX80 = 0x01,
-
-		CH8SET_const = 0x00
-	};
-
-	enum RLD_SENSP_bits {
-		RLD8P = 0x80,
-		RLD7P = 0x40,
-		RLD6P = 0x20,
-		RLD5P = 0x10,
-		RLD4P = 0x08,
-		RLD3P = 0x04,
-		RLD2P = 0x02,
-		RLD1P = 0x01,
-
-		RLD_SENSP_const = 0x00
-	};
-
-	enum RLD_SENSN_bits {
-		RLD8N = 0x80,
-		RLD7N = 0x40,
-		RLD6N = 0x20,
-		RLD5N = 0x10,
-		RLD4N = 0x08,
-		RLD3N = 0x04,
-		RLD2N = 0x02,
-		RLD1N = 0x01,
-
-		RLD_SENSN_const = 0x00
+		BIAS_SENSN_const = 0x00
 	};
 
 	enum LOFF_SENSP_bits {
-		LOFF8P = 0x80,
-		LOFF7P = 0x40,
-		LOFF6P = 0x20,
-		LOFF5P = 0x10,
-		LOFF4P = 0x08,
-		LOFF3P = 0x04,
-		LOFF2P = 0x02,
-		LOFF1P = 0x01,
+		LOFFP8 = bit7,
+		LOFFP7 = bit6,
+		LOFFP6 = bit5,
+		LOFFP5 = bit4,
+		LOFFP4 = bit3,
+		LOFFP3 = bit2,
+		LOFFP2 = bit1,
+		LOFFP1 = bit0,
 
 		LOFF_SENSP_const = 0x00
 	};
 
 	enum LOFF_SENSN_bits {
-		LOFF8N = 0x80,
-		LOFF7N = 0x40,
-		LOFF6N = 0x20,
-		LOFF5N = 0x10,
-		LOFF4N = 0x08,
-		LOFF3N = 0x04,
-		LOFF2N = 0x02,
-		LOFF1N = 0x01,
+		LOFFN8 = bit7,
+		LOFFN7 = bit6,
+		LOFFN6 = bit5,
+		LOFFN5 = bit4,
+		LOFFN4 = bit3,
+		LOFFN3 = bit2,
+		LOFFN2 = bit1,
+		LOFFN1 = bit0,
 
 		LOFF_SENSN_const = 0x00
 	};
 
 	enum LOFF_FLIP_bits {
-		LOFF_FLIP8 = 0x80,
-		LOFF_FLIP7 = 0x40,
-		LOFF_FLIP6 = 0x20,
-		LOFF_FLIP5 = 0x10,
-		LOFF_FLIP4 = 0x08,
-		LOFF_FLIP3 = 0x04,
-		LOFF_FLIP2 = 0x02,
-		LOFF_FLIP1 = 0x01,
+		LOFF_FLIP8 = bit7,
+		LOFF_FLIP7 = bit6,
+		LOFF_FLIP6 = bit5,
+		LOFF_FLIP5 = bit4,
+		LOFF_FLIP4 = bit3,
+		LOFF_FLIP3 = bit2,
+		LOFF_FLIP2 = bit1,
+		LOFF_FLIP1 = bit0,
 
 		LOFF_FLIP_const = 0x00
 	};
 
 	enum LOFF_STATP_bits {
-		IN8P_OFF = 0x80,
-		IN7P_OFF = 0x40,
-		IN6P_OFF = 0x20,
-		IN5P_OFF = 0x10,
-		IN4P_OFF = 0x08,
-		IN3P_OFF = 0x04,
-		IN2P_OFF = 0x02,
-		IN1P_OFF = 0x01,
+		IN8P_OFF = bit7, // LOFFM8 in datasheet SBAS499A Aug 2012
+		IN7P_OFF = bit6,
+		IN6P_OFF = bit5,
+		IN5P_OFF = bit4,
+		IN4P_OFF = bit3,
+		IN3P_OFF = bit2,
+		IN2P_OFF = bit1,
+		IN1P_OFF = bit0, // LOFFM1 in datasheet
 
 		LOFF_STATP_const = 0x00
 	};
 
 	enum LOFF_STATN_bits {
-		IN8N_OFF = 0x80,
-		IN7N_OFF = 0x40,
-		IN6N_OFF = 0x20,
-		IN5N_OFF = 0x10,
-		IN4N_OFF = 0x08,
-		IN3N_OFF = 0x04,
-		IN2N_OFF = 0x02,
-		IN1N_OFF = 0x01,
+		IN8N_OFF = bit7, // IN8M_OFF in datasheet
+		IN7N_OFF = bit6,
+		IN6N_OFF = bit5,
+		IN5N_OFF = bit4,
+		IN4N_OFF = bit3,
+		IN3N_OFF = bit2,
+		IN2N_OFF = bit1,
+		IN1N_OFF = bit0, // IN1M_OFF in datasheet
 
 		LOFF_STATN_const = 0x00
 	};
 
 	enum GPIO_bits {
-		GPIOD4 = 0x80,
-		GPIOD3 = 0x40,
-		GPIOD2 = 0x20,
-		GPIOD1 = 0x10,
-		GPIOC4 = 0x08,
-		GPIOC3 = 0x04,
-		GPIOC2 = 0x02,
-		GPIOC1 = 0x01,
+		GPIOD4 = bit7,
+		GPIOD3 = bit6,
+		GPIOD2 = bit5,
+		GPIOD1 = bit4,
+		GPIOC4 = bit3,
+		GPIOC3 = bit2,
+		GPIOC2 = bit1,
+		GPIOC1 = bit0,
 
 		GPIO_const = 0x00
 	};
 
-	enum PACE_bits {
-		PACEE1 = 0x10,
-		PACEE0 = 0x08,
-		PACEO1 = 0x04,
-		PACEO0 = 0x02,
-		PD_PACE = 0x01,
+	enum MISC1_bits {
+		MISC1_7_off = bit7,
+		MISC1_6_off = bit6,
+		MISC1_SRB1 = bit5,
+		MISC1_4_off = bit4,
+		MISC1_3_off = bit3,
+		MISC1_2_off = bit2,
+		MISC1_1_off = bit1,
+		MISC1_0_off = bit0,
 
-		PACE_const = 0x00,
-
-		PACEE_CHAN2 = 0x00,
-		PACEE_CHAN4 = PACEE0,
-		PACEE_CHAN6 = PACEE1,
-		PACEE_CHAN8 = (PACEE1 | PACEE0),
-
-		PACEO_CHAN1 = 0x00,
-		PACEO_CHAN3 = PACEE0,
-		PACEO_CHAN5 = PACEE1,
-		PACEO_CHAN7 = (PACEE1 | PACEE0)
+		MISC1_const = 0x00,
 	};
 
-	enum RESP_bits {
-		RESP_DEMOD_EN1 = 0x80,
-		RESP_MOD_EN1 = 0x40,
-		RESP_PH2 = 0x10,
-		RESP_PH1 = 0x08,
-		RESP_PH0 = 0x04,
-		RESP_CTRL1 = 0x02,
-		RESP_CTRL0 = 0x01,
+	enum MISC2_bits {
+		MISC2_7_off = bit7,
+		MISC2_6_off = bit6,
+		MISC2_5_off = bit5,
+		MISC2_4_off = bit4,
+		MISC2_3_off = bit3,
+		MISC2_2_off = bit2,
+		MISC2_1_off = bit1,
+		MISC2_0_off = bit0,
 
-		RESP_const = 0x20,
-
-		RESP_PH_22_5 = 0x00,
-		RESP_PH_45 = RESP_PH0,
-		RESP_PH_67_5 = RESP_PH1,
-		RESP_PH_90 = (RESP_PH1 | RESP_PH0),
-		RESP_PH_112_5 = RESP_PH2,
-		RESP_PH_135 = (RESP_PH2 | RESP_PH0),
-		RESP_PH_157_5 = (RESP_PH2 | RESP_PH1),
-
-		RESP_NONE = 0x00,
-		RESP_EXT = RESP_CTRL0,
-		RESP_INT_SIG_INT = RESP_CTRL1,
-		RESP_INT_SIG_EXT = (RESP_CTRL1 | RESP_CTRL0)
+		MISC2_const = 0x00,
 	};
 
 	enum CONFIG4_bits {
-		RESP_FREQ2 = 0x80,
-		RESP_FREQ1 = 0x40,
-		RESP_FREQ0 = 0x20,
-		SINGLE_SHOT = 0x08,
-		WCT_TO_RLD = 0x04,
-		PD_LOFF_COMP = 0x02,
+		CONFIG4_7_off = bit7,
+		CONFIG4_6_off = bit6,
+		CONFIG4_5_off = bit5,
+		CONFIG4_4_off = bit4,
+		SINGLE_SHOT = bit3,
+		CONFIG4_2_off = bit2,
+		PD_LOFF_COMP = bit1,
+		CONFIG4_0_off = bit0,
 
 		CONFIG4_const = 0x00,
 
-		RESP_FREQ_64k_Hz = 0x00,
-		RESP_FREQ_32k_Hz = RESP_FREQ0,
-		RESP_FREQ_16k_Hz = RESP_FREQ1,
-		RESP_FREQ_8k_Hz = (RESP_FREQ1 | RESP_FREQ0),
-		RESP_FREQ_4k_Hz = RESP_FREQ2,
-		RESP_FREQ_2k_Hz = (RESP_FREQ2 | RESP_FREQ0),
-		RESP_FREQ_1k_Hz = (RESP_FREQ2 | RESP_FREQ1),
-		RESP_FREQ_500_Hz = (RESP_FREQ2 | RESP_FREQ1 | RESP_FREQ0)
+		PD_LOFF_COMP_comparators_disabled = 0,
+		PD_LOFF_COMP_comparators_enabled = PD_LOFF_COMP,
 	};
 
-	enum WCT1_bits {
-		aVF_CH6 = 0x80,
-		aVL_CH5 = 0x40,
-		aVR_CH7 = 0x20,
-		avR_CH4 = 0x10,
-		PD_WCTA = 0x08,
-		WCTA2 = 0x04,
-		WCTA1 = 0x02,
-		WCTA0 = 0x01,
-
-		WCT1_const = 0x00,
-
-		WCTA_CH1P = 0x00,
-		WCTA_CH1N = WCTA0,
-		WCTA_CH2P = WCTA1,
-		WCTA_CH2N = (WCTA1 | WCTA0),
-		WCTA_CH3P = WCTA2,
-		WCTA_CH3N = (WCTA2 | WCTA0),
-		WCTA_CH4P = (WCTA2 | WCTA1),
-		WCTA_CH4N = (WCTA2 | WCTA1 | WCTA0)
-	};
-
-	enum WCT2_bits {
-		PD_WCTC = 0x80,
-		PD_WCTB = 0x40,
-		WCTB2 = 0x20,
-		WCTB1 = 0x10,
-		WCTB0 = 0x08,
-		WCTC2 = 0x04,
-		WCTC1 = 0x02,
-		WCTC0 = 0x01,
-
-		WCT2_const = 0x00,
-
-		WCTB_CH1P = 0x00,
-		WCTB_CH1N = WCTB0,
-		WCTB_CH2P = WCTB1,
-		WCTB_CH2N = (WCTB1 | WCTB0),
-		WCTB_CH3P = WCTB2,
-		WCTB_CH3N = (WCTB2 | WCTB0),
-		WCTB_CH4P = (WCTB2 | WCTB1),
-		WCTB_CH4N = (WCTB2 | WCTB1 | WCTB0),
-
-		WCTC_CH1P = 0x00,
-		WCTC_CH1N = WCTC0,
-		WCTC_CH2P = WCTC1,
-		WCTC_CH2N = (WCTC1 | WCTC0),
-		WCTC_CH3P = WCTC2,
-		WCTC_CH3N = (WCTC2 | WCTC0),
-		WCTC_CH4P = (WCTC2 | WCTC1),
-		WCTC_CH4N = (WCTC2 | WCTC1 | WCTC0)
-	};
-*/
 	struct Data_frame {
 		/*
 		   // format of the data frame:
