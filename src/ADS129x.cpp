@@ -73,7 +73,7 @@ void ADS129xChip::init()
 	if (leadOffSensingEnabled) {
 		// Use lead-off sensing in all channels (but only drive one of the
 		// negative leads if all of them are connected to one electrode)
-		writeRegister(CONFIG4, PD_LOFF_COMP);
+		writeRegister(CONFIG4, CONFIG4_const | PD_LOFF_COMP);
 		writeRegister(LOFF, COMP_TH_80 | ILEAD_OFF_24nA);
 		writeRegister(LOFF_SENSP, 0xFF);
 		writeRegister(LOFF_SENSN,
