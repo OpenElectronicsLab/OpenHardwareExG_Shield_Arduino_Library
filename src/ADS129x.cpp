@@ -80,12 +80,7 @@ void ADS129xChip::init()
 			      sharedNegativeElectrode ? 0x01 : 0xFF);
 	}
 
-	uint8_t reserved = (0x01 << 4) | (0x01 << 7);
-	writeRegister(CONFIG1, reserved | 0x6);	// 250 SPS
-	//writeRegister(CONFIG1, reserved | 0x5); // 500 SPS
-	//writeRegister(CONFIG1, reserved | 0x4); // 1k SPS
-	//writeRegister(CONFIG1, reserved | 0x3); // 2k SPS
-	//writeRegister(CONFIG1, reserved | 0x2); // 4k SPS
+	writeRegister(CONFIG1, CONFIG1_const | DR_250_SPS);
 
 	//writeRegister(CONFIG2, INT_TEST);    // generate internal test signals
 
