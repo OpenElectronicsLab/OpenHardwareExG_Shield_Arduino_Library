@@ -14,8 +14,20 @@
 #define SPI_CLOCK_DIVIDER_VAL SPI_CLOCK_DIV8
 #endif
 
-const int maxChannels = 8;	//set the maximum nr of channels here
+const unsigned maxChannels = 8;	//set the maximum nr of channels here
 ADS129xChip ADS129x;
+
+ADS129xChip::ADS129xChip()
+{
+	lastSample = NULL;
+	gain = NULL;
+}
+
+ADS129xChip::~ADS129xChip()
+{
+	delete[] lastSample;
+	delete[] gain;
+}
 
 void ADS129xChip::init()
 {
@@ -26,12 +38,19 @@ void ADS129xChip::init()
 	leadOffSensingEnabled = false;
 	sharedNegativeElectrode = false;
 	liveChannelsNum = 8;
+	lastSampleMicros = 0;
+	sampleCounter = 0;
+	lastSample = new float[maxChannels];
+	gain = new float[maxChannels];
+	for (size_t i = 0; i < maxChannels; ++i) {
+		lastSample[i] = NAN;
+	}
 
 	using namespace ADS1299;
-	int i;
 
 	// set up inputs and outpus
 	pinMode(ipinMasterCS, OUTPUT);
+	pinMode(ipinSlaveCS, OUTPUT);
 	pinMode(ipinDRDY, INPUT);
 
 	SPI.begin();
@@ -57,6 +76,8 @@ void ADS129xChip::init()
 	sendCommand(SDATAC);
 	delay(1);
 
+	cacheChipId = readRegister(ID);
+
 	if (setGPIOToOutput) {
 		// All GPIO set to output 0x0000
 		// (floating CMOS inputs can flicker on and off, creating noise)
@@ -69,6 +90,8 @@ void ADS129xChip::init()
 		      BIAS_LOFF_SENS |
 		      CONFIG3_const);
 	delay(150);
+	// Serial.print("CONFIG3: ");
+	// Serial.println(readRegister(CONFIG3));
 
 	if (leadOffSensingEnabled) {
 		// Use lead-off sensing in all channels (but only drive one of the
@@ -81,6 +104,8 @@ void ADS129xChip::init()
 	}
 
 	writeRegister(CONFIG1, CONFIG1_const | DR_250_SPS);
+	// Serial.print("CONFIG1: ");
+	// Serial.println(readRegister(CONFIG1));
 
 	//writeRegister(CONFIG2, INT_TEST);    // generate internal test signals
 
@@ -91,29 +116,79 @@ void ADS129xChip::init()
 	// connect the negative channel to the (shared) BIAS_IN line
 	// Set the first liveChannelsNum channels to input signal
 	//TODO change to accept a list of live channels
+	int i;
 	for (i = 1; i <= liveChannelsNum; ++i) {
 		writeRegister(CHnSET + i, mux | GAIN_12X);
+		gain[i-1] = 12.0;
 		// writeRegister(CHnSET + i, TEST_SIGNAL | GAIN_12X);
 	}
 	// Set all remaining channels to shorted inputs
 	for (; i <= 8; ++i) {
 		writeRegister(CHnSET + i, SHORTED | PDn);
+		gain[i-1] = NAN;
 	}
 
+	// now start reading data continuously mode
+	sendCommand(RDATAC);
+}
+
+int ADS129xChip::chipId()
+{
+    return cacheChipId;
+}
+
+bool ADS129xChip::updateData()
+{
+
+	if (digitalRead(ipinDRDY) == HIGH) {
+		return false;
+	}
+	// Serial.println("ipinDRDY != HIGH");
+
+	using namespace ADS1299;
+
+	Data_frame frame;
+        SPI.transfer(RDATA);
+        for (int i = 0; i < frame.size; ++i) {
+                frame.data[i] = SPI.transfer(0);
+        }
+
+	if (!frame.magic_ok()) {
+		Serial.println("bad magic");
+		return false;
+	}
+
+	// ignore GPIO for now
+	// ignore lead off for now
+	for(size_t i =0; i< maxChannels; ++i) {
+		long raw = frame.channel_value(1+i);
+		unsigned long max_val = 0x7FFFFF;
+		float val_volts = (((float) raw) / ((float)max_val))
+                                        * reference_voltage;
+		lastSample[i] = val_volts * gain[i];
+	}
+	++sampleCounter;
+	lastSampleMicros = micros();
+	return true;
 }
 
 float ADS129xChip::getVolts(int channel)
 {
-	if (channel < 1 || channel > maxChannels) {
+	if (channel < 1 || ((long)channel) > ((long)maxChannels)) {
 		return NAN;
 	}
-	return 0;
+	updateData();
+	return lastSample[channel-1];
 }
 
 unsigned long ADS129xChip::timeOfSample(){
-	return micros();
+	updateData();
+	return lastSampleMicros;
 }
 
+unsigned long ADS129xChip::sampleCount() {
+	return sampleCounter;
+}
 
 void ADS129xChip::sendCommand(int cmd)
 {

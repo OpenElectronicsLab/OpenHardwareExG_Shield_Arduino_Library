@@ -7,6 +7,8 @@
 namespace ADS1299 {
 #endif
 
+	static const float reference_voltage = 4.5;
+
 	enum bit_number {
 		bit15 = 1<<15,
 		bit14 = 1<<14,
@@ -128,13 +130,13 @@ namespace ADS1299 {
 
 	enum CONFIG2_bits {
 		CONFIG2_7_on = bit7,
-                CONFIG2_6_on = bit6,
-                CONFIG2_5_off = bit5,
-                INT_CAL = bit4,
-                CONFIG2_3_off = bit3,
-                CAL_AMP0 = bit2,
-                CAL_FREQ1 = bit1,
-                CAL_FREQ0 = bit0,
+		CONFIG2_6_on = bit6,
+		CONFIG2_5_off = bit5,
+		INT_CAL = bit4,
+		CONFIG2_3_off = bit3,
+		CAL_AMP0 = bit2,
+		CAL_FREQ1 = bit1,
+		CAL_FREQ0 = bit0,
 
 		CONFIG2_const = (CONFIG2_7_on | CONFIG2_6_on),
 		// CONFIG2_5_off, CONFIG2_3_off
@@ -416,6 +418,25 @@ namespace ADS1299 {
 		}
 		bool loff_statn(int i)const {
 			return ((loff_statn() >> i) & 1);
+		}
+		bool magic_ok() const {
+			return 0xC0 == (data[0] & 0xF0);
+		}
+		long channel_value(unsigned channel) const {
+			unsigned num = channel - 1;
+
+			// first byte is signed
+			signed long bits_17_24 = (((signed long)((int8_t)
+				data[3 + (num * 3)])) << 16);
+
+			unsigned long bits_9_16 = (((unsigned long)
+				data[4 + (num * 3)]) << 8);
+
+			unsigned long bits_0_8 = (((unsigned long)
+				data[5 + (num * 3)]) << 0);
+
+			signed long val = bits_17_24 | bits_9_16 | bits_0_8;
+			return val;
 		}
 #endif
 	};
