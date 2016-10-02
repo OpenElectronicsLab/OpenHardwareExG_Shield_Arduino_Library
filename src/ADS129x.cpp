@@ -115,7 +115,7 @@ float ADS129xChip::getVolts(int channel)
 	return 0;
 }
 
-unsigned long timeOfSample(){
+unsigned long ADS129xChip::timeOfSample(){
 	return micros();
 }
 
