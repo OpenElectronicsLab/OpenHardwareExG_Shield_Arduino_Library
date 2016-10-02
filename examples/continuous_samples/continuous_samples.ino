@@ -13,8 +13,6 @@ void setup() {
 
   // Initialize OpenHardwareExG board
   ADS129x.init();
-  Serial.print("micros:");
-  Serial.println(micros());
 }
 
 unsigned loop_counter = 0;
@@ -23,9 +21,10 @@ void loop() {
   // if new data
   if (ADS129x.timeOfSample() != time_last_sample) {
     time_last_sample = ADS129x.timeOfSample();
+    Serial.print((time_last_sample * 1.0)/(1000*1000), 6);
     for (int chan = 1; chan <= 8; ++chan) {
-       Serial.print(ADS129x.getVolts(chan));
        Serial.print("\t");
+       Serial.print(ADS129x.getVolts(chan),8);
     }
     Serial.println();
   }
