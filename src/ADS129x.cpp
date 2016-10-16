@@ -130,6 +130,8 @@ void ADS129xChip::init()
 
 	// now start reading data continuously mode
 	sendCommand(RDATAC);
+	delay(1);
+	sendCommand(START);
 }
 
 int ADS129xChip::chipId()
@@ -148,13 +150,27 @@ bool ADS129xChip::updateData()
 	using namespace ADS1299;
 
 	Data_frame frame;
-        SPI.transfer(RDATA);
+	// ipinMasterCS
+	digitalWrite(ipinMasterCS, LOW);
+
         for (int i = 0; i < frame.size; ++i) {
                 frame.data[i] = SPI.transfer(0);
         }
 
+	delayMicroseconds(1);
+	digitalWrite(ipinMasterCS, HIGH);
+
 	if (!frame.magic_ok()) {
-		Serial.println("bad magic");
+		// FIXME: remove Serial.println
+		// TODO: how to allow diagnostics/error reporting?
+		static int bad_magic_counter = 0;
+		if (bad_magic_counter++ % (1000) < 12) {
+			Serial.println("bad magic");
+			for(size_t i=0; i< frame.size; ++i) {
+				Serial.print(frame.data[i], HEX);
+			}
+			Serial.println();
+		}
 		return false;
 	}
 
@@ -165,7 +181,7 @@ bool ADS129xChip::updateData()
 		unsigned long max_val = 0x7FFFFF;
 		float val_volts = (((float) raw) / ((float)max_val))
                                         * reference_voltage;
-		lastSample[i] = val_volts * gain[i];
+		lastSample[i] = val_volts / gain[i];
 	}
 	++sampleCounter;
 	lastSampleMicros = micros();
