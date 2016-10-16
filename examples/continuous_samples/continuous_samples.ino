@@ -5,7 +5,6 @@
 
 void setup() {
   // Open serial communications and wait for port to open:
-  //  Serial.begin(230400);
   Serial.begin(115200);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
@@ -25,8 +24,8 @@ void loop() {
   // if new data
   if (ADS129x.timeOfSample() != time_last_sample) {
     time_last_sample = ADS129x.timeOfSample();
-    Serial.print((time_last_sample * 1.0) / (1000 * 1000), 6);
-    for (int chan = 1; chan <= 8; ++chan) {
+    Serial.print((time_last_sample * 1.0) / (1000 * 1000), 3);
+    for (int chan = 1; chan <= 3; ++chan) {
       Serial.print("\t");
       Serial.print(ADS129x.getVolts(chan), 8);
     }
