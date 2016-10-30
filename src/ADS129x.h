@@ -29,11 +29,12 @@ class ADS129xChip{
 
   float *gain;
 
-  void sendCommand(int cmd);
+  enum { master = 1, slave = 2 };
+  void sendCommand(int cmd, int target = master | slave);
 
   uint8_t readRegister(int reg);
 
-  void writeRegister(int reg, int val);
+  void writeRegister(int reg, int val, int target = master | slave);
 
   bool updateData();
 
