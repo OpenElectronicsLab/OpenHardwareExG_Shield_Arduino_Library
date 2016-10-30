@@ -12,29 +12,14 @@ void setup() {
 
   // Initialize OpenHardwareExG board
   ADS129x.init();
-  Serial.print("chip ID: ");
-  Serial.println(ADS129x.chipId());
 }
 
-unsigned long loop_counter = 0;
-unsigned long time_last_sample = 0; // microseconds
 void loop() {
-  ++loop_counter;
-
-  // if new data
-  if (ADS129x.timeOfSample() != time_last_sample) {
-    time_last_sample = ADS129x.timeOfSample();
-    Serial.print((time_last_sample * 1.0) / (1000 * 1000), 3);
+    delay(1);
+    Serial.print(millis() / 1000.0, 3); // seconds
     for (int chan = 1; chan <= 3; ++chan) {
       Serial.print("\t");
       Serial.print(ADS129x.getVolts(chan), 8);
     }
     Serial.println();
-  } else {
-    if (0 == (loop_counter % (1024 * 1024))) {
-      Serial.print("sample count: ");
-      Serial.print(ADS129x.sampleCount());
-      Serial.println(" (waiting)");
-    }
-  }
 }
