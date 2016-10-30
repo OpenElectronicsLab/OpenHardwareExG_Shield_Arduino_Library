@@ -87,7 +87,6 @@ void ADS129xChip::init()
 		// (floating CMOS inputs can flicker on and off, creating noise)
 		writeRegister(GPIO, 0x00);
 	}
-
 	//writeRegister(CONFIG2, INT_TEST);    // generate internal test signals
 
 	// Power up the internal reference and wait for it to settle
@@ -111,7 +110,6 @@ void ADS129xChip::init()
 		writeRegister(LOFF_SENSN,
 			      sharedNegativeElectrode ? 0x01 : 0xFF);
 	}
-
 	// If we want to share a single negative electrode, tie the negative
 	// inputs together using the BIAS_IN line.
 	uint8_t mux = sharedNegativeElectrode ? BIAS_DRN : ELECTRODE_INPUT;
@@ -148,39 +146,37 @@ bool ADS129xChip::updateData()
 
 	using namespace ADS1299;
 
-
 	SPI.beginTransaction(spiSettings);
 	digitalWrite(ipinMasterCS, LOW);
 
 	for (size_t i = 0; i < maxChannels; i += 8) {
-
-	Data_frame frame;
-	for (int j = 0; j < frame.size; ++j) {
-		frame.data[j] = SPI.transfer(0);
-	}
-
-	if (!frame.magic_ok()) {
-		// FIXME: remove Serial.println
-		// TODO: how to allow diagnostics/error reporting?
-		static int bad_magic_counter = 0;
-		if (bad_magic_counter++ % (1000) < 12) {
-			Serial.println("bad magic");
-			for (size_t j = 0; j < frame.size; ++j) {
-				Serial.print(frame.data[j], HEX);
-			}
-			Serial.println();
+		Data_frame frame;
+		for (int j = 0; j < frame.size; ++j) {
+			frame.data[j] = SPI.transfer(0);
 		}
-		return false;
-	}
-	// ignore GPIO for now
-	// ignore lead off for now
-	for (size_t j = 0; j < 8; ++j) {
-		long raw = frame.channel_value(1 + j);
-		unsigned long max_val = 0x7FFFFF;
-		float val_volts = (((float)raw) / ((float)max_val))
-		    * reference_voltage;
-		lastSample[i + j] = val_volts / gain[i + j];
-	}
+
+		if (!frame.magic_ok()) {
+			// FIXME: remove Serial.println
+			// TODO: how to allow diagnostics/error reporting?
+			static int bad_magic_counter = 0;
+			if (bad_magic_counter++ % (1000) < 12) {
+				Serial.println("bad magic");
+				for (size_t j = 0; j < frame.size; ++j) {
+					Serial.print(frame.data[j], HEX);
+				}
+				Serial.println();
+			}
+			return false;
+		}
+		// ignore GPIO for now
+		// ignore lead off for now
+		for (size_t j = 0; j < 8; ++j) {
+			long raw = frame.channel_value(1 + j);
+			unsigned long max_val = 0x7FFFFF;
+			float val_volts = (((float)raw) / ((float)max_val))
+			    * reference_voltage;
+			lastSample[i + j] = val_volts / gain[i + j];
+		}
 	}
 
 	delayMicroseconds(1);
@@ -214,7 +210,6 @@ unsigned long ADS129xChip::sampleCount()
 
 void ADS129xChip::sendCommand(int cmd, int target)
 {
-	//ipinMasterCS:
 	SPI.beginTransaction(spiSettings);
 	if (target & master) {
 		digitalWrite(ipinMasterCS, LOW);
@@ -256,7 +251,6 @@ uint8_t ADS129xChip::readRegister(int reg)
 void ADS129xChip::writeRegister(int reg, int val, int target)
 {
 	SPI.beginTransaction(spiSettings);
-	// ipinMasterCS
 	if (target & master) {
 		digitalWrite(ipinMasterCS, LOW);
 	}
@@ -264,10 +258,10 @@ void ADS129xChip::writeRegister(int reg, int val, int target)
 		digitalWrite(ipinSlaveCS, LOW);
 	}
 
-	// ADS1299::WREG
 	SPI.transfer(ADS1299::WREG | reg);
 	SPI.transfer(0);	// number of registers to be read/written
 	SPI.transfer(val);
+
 	delayMicroseconds(1);
 	if (target & master) {
 		digitalWrite(ipinMasterCS, HIGH);
