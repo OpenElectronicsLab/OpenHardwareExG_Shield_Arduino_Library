@@ -21,6 +21,8 @@
 #  ads1298.h
 #  ads1299.h
 
+ARDUINO_ROOT=$(HOME)/arduino-1.6.12
+
 SRC_DIR=src
 EXAMPLES_DIR=examples/continuous_samples
 
@@ -54,7 +56,6 @@ RESET_PORT=stty -F /dev/$(PORT) 1200; sleep 1
 #BOSSAC_USB_NATIVE=true
 BOSSAC_USB_NATIVE=false
 
-ARDUINO_ROOT=$(HOME)/arduino-1.5.5
 ARDUINO_SAM_DIR=$(ARDUINO_ROOT)/hardware/arduino/sam
 ARDUINO_SPI_DIR=$(ARDUINO_SAM_DIR)/libraries/SPI
 ARDUINO_SOURCES_DIR=$(ARDUINO_SAM_DIR)/cores/arduino
