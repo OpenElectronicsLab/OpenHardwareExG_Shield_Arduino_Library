@@ -7,15 +7,11 @@
 #include <math.h>
 #include "ads1299.h"
 
-#ifdef  _VARIANT_ARDUINO_DUE_X_
-#define SPI_CLOCK_DIVIDER_VAL 21
-#else
-// #define SPI_CLOCK_DIVIDER_VAL SPI_CLOCK_DIV4
-#define SPI_CLOCK_DIVIDER_VAL SPI_CLOCK_DIV8
-#endif
+#define SPI_SPEED_MAX 4000000
 
 const unsigned maxChannels = 8;	//set the maximum nr of channels here
 ADS129xChip ADS129x;
+const SPISettings spiSettings(SPI_SPEED_MAX, MSBFIRST, SPI_MODE1);
 
 ADS129xChip::ADS129xChip()
 {
@@ -55,12 +51,6 @@ void ADS129xChip::init()
 
 	SPI.begin();
 
-	// setup SPI (note that if you have multiple SPI devices
-	// you may need different settings)
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setClockDivider(SPI_CLOCK_DIVIDER_VAL);
-	SPI.setDataMode(SPI_MODE1);
-
 	// Wait for 33 milliseconds (we will use 100 millis)
 	//  for Power-On Reset and Oscillator Start-Up
 	delay(100);
@@ -87,8 +77,7 @@ void ADS129xChip::init()
 	writeRegister(CONFIG3,
 		      PD_REFBUF_reference_buffer_enabled |
 		      PD_BIAS_bias_buffer_enabled |
-		      BIAS_LOFF_SENS |
-		      CONFIG3_const);
+		      BIAS_LOFF_SENS | CONFIG3_const);
 	delay(150);
 	// Serial.print("CONFIG3: ");
 	// Serial.println(readRegister(CONFIG3));
@@ -119,13 +108,13 @@ void ADS129xChip::init()
 	int i;
 	for (i = 1; i <= liveChannelsNum; ++i) {
 		writeRegister(CHnSET + i, mux | GAIN_12X);
-		gain[i-1] = 12.0;
+		gain[i - 1] = 12.0;
 		// writeRegister(CHnSET + i, TEST_SIGNAL | GAIN_12X);
 	}
 	// Set all remaining channels to shorted inputs
 	for (; i <= 8; ++i) {
 		writeRegister(CHnSET + i, SHORTED | PDn);
-		gain[i-1] = NAN;
+		gain[i - 1] = NAN;
 	}
 
 	// now start reading data continuously mode
@@ -136,7 +125,7 @@ void ADS129xChip::init()
 
 int ADS129xChip::chipId()
 {
-    return cacheChipId;
+	return cacheChipId;
 }
 
 bool ADS129xChip::updateData()
@@ -145,7 +134,6 @@ bool ADS129xChip::updateData()
 	if (digitalRead(ipinDRDY) == HIGH) {
 		return false;
 	}
-	// Serial.println("ipinDRDY != HIGH");
 
 	using namespace ADS1299;
 
@@ -153,12 +141,13 @@ bool ADS129xChip::updateData()
 	// ipinMasterCS
 	digitalWrite(ipinMasterCS, LOW);
 
-        for (int i = 0; i < frame.size; ++i) {
-                frame.data[i] = SPI.transfer(0);
-        }
-
+	SPI.beginTransaction(spiSettings);
+	for (int i = 0; i < frame.size; ++i) {
+		frame.data[i] = SPI.transfer(0);
+	}
 	delayMicroseconds(1);
 	digitalWrite(ipinMasterCS, HIGH);
+	SPI.endTransaction();
 
 	if (!frame.magic_ok()) {
 		// FIXME: remove Serial.println
@@ -166,21 +155,20 @@ bool ADS129xChip::updateData()
 		static int bad_magic_counter = 0;
 		if (bad_magic_counter++ % (1000) < 12) {
 			Serial.println("bad magic");
-			for(size_t i=0; i< frame.size; ++i) {
+			for (size_t i = 0; i < frame.size; ++i) {
 				Serial.print(frame.data[i], HEX);
 			}
 			Serial.println();
 		}
 		return false;
 	}
-
 	// ignore GPIO for now
 	// ignore lead off for now
-	for(size_t i =0; i< maxChannels; ++i) {
-		long raw = frame.channel_value(1+i);
+	for (size_t i = 0; i < maxChannels; ++i) {
+		long raw = frame.channel_value(1 + i);
 		unsigned long max_val = 0x7FFFFF;
-		float val_volts = (((float) raw) / ((float)max_val))
-                                        * reference_voltage;
+		float val_volts = (((float)raw) / ((float)max_val))
+		    * reference_voltage;
 		lastSample[i] = val_volts / gain[i];
 	}
 	++sampleCounter;
@@ -194,31 +182,36 @@ float ADS129xChip::getVolts(int channel)
 		return NAN;
 	}
 	updateData();
-	return lastSample[channel-1];
+	return lastSample[channel - 1];
 }
 
-unsigned long ADS129xChip::timeOfSample(){
+unsigned long ADS129xChip::timeOfSample()
+{
 	updateData();
 	return lastSampleMicros;
 }
 
-unsigned long ADS129xChip::sampleCount() {
+unsigned long ADS129xChip::sampleCount()
+{
 	return sampleCounter;
 }
 
 void ADS129xChip::sendCommand(int cmd)
 {
 	//ipinMasterCS:
+	SPI.beginTransaction(spiSettings);
 	digitalWrite(ipinMasterCS, LOW);
 	SPI.transfer(cmd);
 	delayMicroseconds(1);
 	digitalWrite(ipinMasterCS, HIGH);
+	SPI.endTransaction();
 }
 
 uint8_t ADS129xChip::readRegister(int reg)
 {
 	uint8_t val;
 
+	SPI.beginTransaction(spiSettings);
 	digitalWrite(ipinMasterCS, LOW);
 
 	SPI.transfer(ADS1299::RREG | reg);
@@ -227,12 +220,14 @@ uint8_t ADS129xChip::readRegister(int reg)
 
 	delayMicroseconds(1);
 	digitalWrite(ipinMasterCS, HIGH);
+	SPI.endTransaction();
 
 	return val;
 }
 
 void ADS129xChip::writeRegister(int reg, int val)
 {
+	SPI.beginTransaction(spiSettings);
 	// ipinMasterCS
 	digitalWrite(ipinMasterCS, LOW);
 
@@ -242,4 +237,5 @@ void ADS129xChip::writeRegister(int reg, int val)
 	SPI.transfer(val);
 	delayMicroseconds(1);
 	digitalWrite(ipinMasterCS, HIGH);
+	SPI.endTransaction();
 }
