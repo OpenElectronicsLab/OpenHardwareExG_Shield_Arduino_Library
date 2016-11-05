@@ -148,38 +148,44 @@ bool ADS129xChip::updateData()
 
 	SPI.beginTransaction(spiSettings);
 	digitalWrite(ipinMasterCS, LOW);
+	digitalWrite(ipinSlaveCS, LOW);
 
+	Data_frame frames[(maxChannels/8)];
 	for (size_t i = 0; i < maxChannels; i += 8) {
-		Data_frame frame;
+		Data_frame &frame = frames[i/8];
 		for (int j = 0; j < frame.size; ++j) {
 			frame.data[j] = SPI.transfer(0);
 		}
+	}
 
+	for (size_t i = 0; i < maxChannels; i += 8) {
+		Data_frame &frame = frames[i/8];
 		if (!frame.magic_ok()) {
 			// FIXME: remove Serial.println
 			// TODO: how to allow diagnostics/error reporting?
 			static int bad_magic_counter = 0;
 			if (bad_magic_counter++ % (1000) < 12) {
-				Serial.println("bad magic");
-				for (size_t j = 0; j < frame.size; ++j) {
-					Serial.print(frame.data[j], HEX);
-				}
-				Serial.println();
+				Serial.print("bad magic:");
+				char buf[255];
+				frame.dump(buf, 255);
+				Serial.println(buf);
 			}
-			return false;
-		}
-		// ignore GPIO for now
-		// ignore lead off for now
-		for (size_t j = 0; j < 8; ++j) {
-			long raw = frame.channel_value(1 + j);
-			unsigned long max_val = 0x7FFFFF;
-			float val_volts = (((float)raw) / ((float)max_val))
-			    * reference_voltage;
-			lastSample[i + j] = val_volts / gain[i + j];
+		} else {
+			// ignore GPIO for now
+			// ignore lead off for now
+			for (size_t j = 0; j < 8; ++j) {
+				long raw = frame.channel_value(1 + j);
+				unsigned long max_val = 0x7FFFFF;
+				float val_volts = (((float)raw) /
+					((float)max_val))
+					* reference_voltage;
+				lastSample[i + j] = val_volts / gain[i + j];
+			}
 		}
 	}
 
 	delayMicroseconds(1);
+	digitalWrite(ipinSlaveCS, HIGH);
 	digitalWrite(ipinMasterCS, HIGH);
 	SPI.endTransaction();
 
