@@ -407,6 +407,24 @@ namespace ADS1299 {
 		uint8_t data[size];
 
 #ifdef __cplusplus
+		size_t dump(char *buf, size_t buf_len) {
+			size_t i;
+			if (!buf) {
+				return 0;
+			}
+			for (i=0; i < size && (i*2) < (buf_len-3); ++i) {
+				uint8_t v = data[i];
+				uint8_t h = (v & 0xF0) >> 4;
+				uint8_t l = (v & 0x0F);
+				char basec;
+				basec = (h < 10) ? '0' : ((char)('A'-10));
+				buf[2*i] = basec + h;
+				basec = (l < 10) ? '0' : ((char)('A'-10));
+				buf[2*i + 1] = basec + ((char)l);
+			}
+			buf[2*i] = '\0';
+			return 2*i;
+		}
 		uint8_t loff_statp() const {
 			return ((data[0] << 4) | (data[1] >> 4));
 		}
