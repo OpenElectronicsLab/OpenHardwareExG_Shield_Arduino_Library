@@ -11,6 +11,7 @@ using namespace ADS1299;
 // record from 2 leads-on for one second tot-en-met all leads-off
 const int LED_PIN = 13;
 const unsigned Max_samples_no_leads = 250 * 5;
+const unsigned Max_samples_per_file = 250 * (60 * 5);
 const unsigned maxChannels = 8;
 const size_t num_ads_chips = (maxChannels / 8);
 
@@ -113,9 +114,13 @@ void open_file()
 
 	if (!file.open(fileName, O_CREAT | O_WRITE | O_EXCL)) {
 		error("file.open", fileName);
+		recording = false;
+		digitalWrite(LED_PIN, LOW);
 	} else {
 		Serial.print("opened ");
 		Serial.println(fileName);
+		recording = true;
+		digitalWrite(LED_PIN, HIGH);
 	}
 }
 
@@ -124,11 +129,14 @@ void close_file()
 	file.close();
 	Serial.print("closed ");
 	Serial.println(fileName);
+	recording = false;
+	digitalWrite(LED_PIN, LOW);
+	sampleCount = 0;
 }
 
 void log_frames_sd()
 {
-	char buf[(2 * (3 + 3 * 8)) + 3];
+	char buf[(2 * (3 + (3 * 8))) + 3];
 	file.print(sampleCount);
 
 	for (size_t i = 0; i < num_ads_chips; ++i) {
@@ -167,19 +175,17 @@ void loop()
 
 		if (!recording && samplesNoLeads == 0) {
 			open_file();
-			recording = true;
-			digitalWrite(LED_PIN, HIGH);
-		} else if (recording && samplesNoLeads > Max_samples_no_leads) {
-			close_file();
-			recording = false;
-			digitalWrite(LED_PIN, LOW);
-			sampleCount = 0;
 		}
 
 		if (recording) {
 			sampleCount++;
 			log_frames_sd();
 			// notify_frames_arrival();
+		}
+
+		if (recording && (samplesNoLeads >= Max_samples_no_leads)
+		    || (sampleCount >= Max_samples_per_file)) {
+			close_file();
 		}
 	}
 	// do_blue_tooth_stuff();
