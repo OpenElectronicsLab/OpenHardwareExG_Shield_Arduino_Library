@@ -76,7 +76,7 @@ bool leads_on(Data_frame * frames, size_t len)
 	return false;
 }
 
-size_t sprint_hex(char *buf, size_t blen, void *data, size_t len)
+size_t snprint_hex(char *buf, size_t blen, void *data, size_t len)
 {
 	size_t i;
 	unsigned char *cp = (unsigned char *)data;
@@ -111,7 +111,7 @@ void open_file()
 	fileName[i++] = 'g';
 	fileName[i++] = '_';
 */
-	i += sprint_hex(fileName + i, bufLen - i, &time, sizeof(time));
+	i += snprint_hex(fileName + i, bufLen - i, &time, sizeof(time));
 	fileName[i++] = '.';
 	fileName[i++] = 'd';
 	fileName[i++] = 'a';
@@ -148,7 +148,7 @@ void log_frames_sd()
 	for (size_t i = 0; i < num_ads_chips; ++i) {
 		file.write(':');
 		Data_frame frame = frames[i];
-		sprint_hex(buf, bufLen, frame.data, frame.size);
+		snprint_hex(buf, bufLen, frame.data, frame.size);
 		file.print(buf);
 	}
 	file.println();
