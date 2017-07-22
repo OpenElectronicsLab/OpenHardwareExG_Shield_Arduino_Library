@@ -23,7 +23,8 @@ bool recording;
 
 SdFat sd;
 SdFile file;
-char fileName[80];
+const size_t bufLen = 80;
+char fileName[bufLen];
 int sdChipSelect = 2;
 
 void setup()
@@ -75,15 +76,20 @@ bool leads_on(Data_frame * frames, size_t len)
 	return false;
 }
 
-size_t as_hex_unsafe(char *buf, void *data, size_t len)
+size_t sprint_hex(char *buf, size_t blen, void *data, size_t len)
 {
 	size_t i;
 	unsigned char *cp = (unsigned char *)data;
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < len && (i * 2) < blen; ++i) {
 		to_hex(*(cp + i), buf + (i * 2));
 	}
-	buf[i * 2] = '\0';
-	return i * 2;
+	if ((i * 2) < blen) {
+		buf[i * 2] = '\0';
+		return i * 2;
+	} else {
+		buf[blen - 1] = '\0';
+		return blen - 1;
+	}
 }
 
 void error(const char *msg1, const char *msg2)
@@ -105,7 +111,7 @@ void open_file()
 	fileName[i++] = 'g';
 	fileName[i++] = '_';
 */
-	i += as_hex_unsafe(fileName + i, &time, sizeof(time));
+	i += sprint_hex(fileName + i, bufLen - i, &time, sizeof(time));
 	fileName[i++] = '.';
 	fileName[i++] = 'd';
 	fileName[i++] = 'a';
@@ -136,13 +142,13 @@ void close_file()
 
 void log_frames_sd()
 {
-	char buf[(2 * (3 + (3 * 8))) + 3];
+	char buf[bufLen];
 	file.print(sampleCount);
 
 	for (size_t i = 0; i < num_ads_chips; ++i) {
 		file.write(':');
 		Data_frame frame = frames[i];
-		as_hex_unsafe(buf, frame.data, frame.size);
+		sprint_hex(buf, bufLen, frame.data, frame.size);
 		file.print(buf);
 	}
 	file.println();
