@@ -26,8 +26,8 @@ void ADS129xChip::init()
 	ipinSlaveCS = 6;
 	ipinMasterCS = 7;
 	setGPIOToOutput = false;
-	leadOffSensingEnabled = false;
-	sharedNegativeElectrode = false;
+	leadOffSensingEnabled = true;
+	sharedNegativeElectrode = true;
 
 	using namespace ADS1299;
 
