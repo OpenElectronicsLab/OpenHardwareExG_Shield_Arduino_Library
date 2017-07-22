@@ -17,6 +17,7 @@ const size_t num_ads_chips = (maxChannels/8);
 Data_frame frames[num_ads_chips];
 unsigned long sampleCount;
 unsigned int samplesNoLeads;
+int loopCounter;
 bool recording;
 
 SdFat sd;
@@ -39,13 +40,20 @@ void setup() {
   sampleCount = 0;
   recording = 0;
   samplesNoLeads = Max_samples_no_leads;
+  loopCounter = 0;
 
   // Initialize at the highest speed supported by the board that is
   // not over 50 MHz. Try a lower speed if SPI errors occur.
   //  sd.begin(chipSelect, SPI_SPEED);
   if (!sd.begin(sdChipSelect, SD_SCK_MHZ(50))) {
-    sd.initErrorHalt();
-  }
+    Serial.println("initialization failed. Things to check:");
+    Serial.println("* is a card inserted?");
+    Serial.println("* is your wiring correct?");
+    Serial.println("* did you change the chipSelect pin to match your shield or module?");
+    return;
+  } else {
+    Serial.println("Wiring is correct and a card is present.");
+  }    
 }
 
 bool leads_on(Data_frame *frames, size_t len)
@@ -91,12 +99,12 @@ void open_file()
   unsigned long time = micros();
   size_t i = 0;
 
-  fileName[i++] = 'o';
-  fileName[i++] = 'h';
+/*
   fileName[i++] = 'e';
   fileName[i++] = 'x';
   fileName[i++] = 'g';
   fileName[i++] = '_';
+  */
   i += as_hex_unsafe(fileName+i, &time, sizeof(time));
   fileName[i++] = '.';
   fileName[i++] = 'd';
@@ -138,7 +146,17 @@ void notify_frames_arrival()
 }
 
 void loop() {
-
+   if((loopCounter++ % 100000) == 0) {
+    Serial.print("loop count: ");
+    Serial.print(loopCounter);
+    if (recording) {
+      Serial.println(" (recording)");
+    } else {
+      Serial.print(" ADS Chip ID: ");
+      Serial.println(ADS129x.chipId());
+    }
+   }
+    
     if (ADS129x.getFrames(frames, num_ads_chips)) {
 	if (leads_on(frames, num_ads_chips)) {
 		samplesNoLeads = 0;
